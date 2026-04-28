@@ -9,13 +9,20 @@ public class Arvore {
 
     private No raiz;
 
-    public boolean inserir(int valor) {
+    public ResultadoInsercao inserir(int valor) {
         if (buscar(valor)) {
-            return false;
+            return new ResultadoInsercao(false, "Valor já existe!");
         }
 
-        raiz = inserirRec(raiz, valor);
-        return true;
+        StringBuilder log = new StringBuilder();
+
+        if (modoAVL) {
+            raiz = inserirAVL(raiz, valor, log);
+        } else {
+            raiz = inserirRec(raiz, valor);
+        }
+
+        return new ResultadoInsercao(true, log.toString());
     }
 
     private No inserirRec(No nodo, int valor) {
@@ -322,7 +329,8 @@ public class Arvore {
             }
         }
         return subgrupos;
-    }public void inverter() {
+    }
+    public void inverter() {
     raiz = inverterRec(raiz);
 }
 
@@ -349,6 +357,86 @@ public class Arvore {
 
         return Math.max(esq, dir);
     }
-    
+    private boolean modoAVL = false;
+
+    public void setModoAVL(boolean modoAVL) {
+        this.modoAVL = modoAVL;
+    }
+    // Balanço com recursão
+    private No rotacaoDireita(No y) {
+        No x = y.getEsquerda();
+        No T2 = x.getDireita();
+
+        // rotação
+        x.setDireita(y);
+        y.setEsquerda(T2);
+
+        return x; // nova raiz da subárvore
+    }
+
+    private No rotacaoEsquerda(No x) {
+        No y = x.getDireita();
+        No T2 = y.getEsquerda();
+
+        // rotação
+        y.setEsquerda(x);
+        x.setDireita(T2);
+
+        return y; // nova raiz da subárvore
+    }
+
+    private No inserirAVL(No no, int valor, StringBuilder log) {
+        if (no == null) {
+            return new No(valor);
+        }
+
+        if (valor < no.getValor()) {
+            no.setEsquerda(inserirAVL(no.getEsquerda(), valor, log));
+        } else if (valor > no.getValor()) {
+            no.setDireita(inserirAVL(no.getDireita(), valor, log));
+        } else {
+            return no;
+        }
+
+        int balanco = calcularAltura(no.getEsquerda()) - calcularAltura(no.getDireita());
+
+        // LL
+        if (balanco > 1 && valor < no.getEsquerda().getValor()) {
+            log.append("Rotação LL em ").append(no.getValor())
+                    .append(" (nós afetados: ").append(no.getValor())
+                    .append(", ").append(no.getEsquerda().getValor()).append(")\n");
+            return rotacaoDireita(no);
+        }
+
+        // RR
+        if (balanco < -1 && valor > no.getDireita().getValor()) {
+            log.append("Rotação RR em ").append(no.getValor())
+                    .append(" (nós afetados: ").append(no.getValor())
+                    .append(", ").append(no.getDireita().getValor()).append(")\n");
+            return rotacaoEsquerda(no);
+        }
+
+        // LR
+        if (balanco > 1 && valor > no.getEsquerda().getValor()) {
+            log.append("Rotação LR em ").append(no.getValor())
+                    .append(" (nós: ").append(no.getValor())
+                    .append(", ").append(no.getEsquerda().getValor()).append(")\n");
+
+            no.setEsquerda(rotacaoEsquerda(no.getEsquerda()));
+            return rotacaoDireita(no);
+        }
+
+        // RL
+        if (balanco < -1 && valor < no.getDireita().getValor()) {
+            log.append("Rotação RL em ").append(no.getValor())
+                    .append(" (nós: ").append(no.getValor())
+                    .append(", ").append(no.getDireita().getValor()).append(")\n");
+
+            no.setDireita(rotacaoDireita(no.getDireita()));
+            return rotacaoEsquerda(no);
+        }
+
+        return no;
+    }
     
 }

@@ -33,6 +33,7 @@ public class TelaArvore extends JFrame {
         JButton botaoImportar = new JButton("Importar TXT");
         JButton botaoInfo = new JButton("Info Árvore");
         JButton botaoInverter = new JButton("Inverter Árvore");
+        JCheckBox checkAvl = new JCheckBox("Modo Avl");
 
         painelControle.add(label);
         painelControle.add(campoNumero);
@@ -42,7 +43,7 @@ public class TelaArvore extends JFrame {
         painelControle.add(botaoImportar);
         painelControle.add(botaoInfo);
         painelControle.add(botaoInverter);
-        
+        painelControle.add(checkAvl);
 
         add(painelControle, BorderLayout.NORTH);
 
@@ -61,6 +62,9 @@ public class TelaArvore extends JFrame {
         botaoInfo.addActionListener(e -> mostrarInfo());
         campoNumero.addActionListener(e -> inserirValor());
         botaoInverter.addActionListener(e -> inverterArvore());
+        checkAvl.addActionListener(e ->{
+            arvore.setModoAVL(checkAvl.isSelected());
+        });
     }
     
     private void importarArvore() {
@@ -90,10 +94,17 @@ public class TelaArvore extends JFrame {
                 return;
             }
 
-            boolean inserido = arvore.inserir(numero);
+            ResultadoInsercao resultado = arvore.inserir(numero);
 
-            if (!inserido) {
+            if (!resultado.inserido) {
                 JOptionPane.showMessageDialog(this, "Número " + numero + " já existe!", "Aviso", JOptionPane.WARNING_MESSAGE);
+            }else if (resultado.log != null && !resultado.log.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        resultado.log,
+                        "Rotação AVL",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
             }
 
             campoNumero.setText("");
