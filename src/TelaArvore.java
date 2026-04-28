@@ -4,19 +4,17 @@ import java.io.IOException;
 
 public class TelaArvore extends JFrame {
 
-    private final Arvore arvore;
+    private Arvore arvore;
     private JTextField campoNumero;
     private JComboBox<String> comboModo;
     private JTextArea areaMensagem;
     private PainelArvore painelArvore;
-    private JScrollPane scrollPane;
-    private boolean atualizandoModo;
 
     public TelaArvore() {
         arvore = new Arvore();
 
         setTitle("Arvore Binaria");
-        setSize(1000, 750);
+        setSize(1000, 730);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -24,7 +22,6 @@ public class TelaArvore extends JFrame {
         montarPainelControle();
         montarPainelArvore();
         montarPainelMensagem();
-        atualizarComboModo();
     }
 
     private void montarPainelControle() {
@@ -34,7 +31,7 @@ public class TelaArvore extends JFrame {
         JLabel labelValor = new JLabel("Valor:");
         campoNumero = new JTextField(5);
 
-        JLabel labelModo = new JLabel("Modo:");
+        JLabel labelModo = new JLabel("Tipo:");
         comboModo = new JComboBox<>(new String[]{"Binaria Normal", "AVL"});
 
         JButton botaoInserir = new JButton("Inserir");
@@ -64,12 +61,12 @@ public class TelaArvore extends JFrame {
         botaoInfo.addActionListener(e -> mostrarInfo());
         botaoInverter.addActionListener(e -> inverterArvore());
         campoNumero.addActionListener(e -> inserirValor());
-        comboModo.addActionListener(e -> alterarModoSelecionado());
+        comboModo.addActionListener(e -> trocarModo());
     }
 
     private void montarPainelArvore() {
         painelArvore = new PainelArvore(arvore);
-        scrollPane = new JScrollPane(painelArvore);
+        JScrollPane scrollPane = new JScrollPane(painelArvore);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         add(scrollPane, BorderLayout.CENTER);
@@ -80,52 +77,24 @@ public class TelaArvore extends JFrame {
         areaMensagem.setEditable(false);
         areaMensagem.setLineWrap(true);
         areaMensagem.setWrapStyleWord(true);
-        areaMensagem.setText(arvore.getUltimoRelatorioInsercao());
+        areaMensagem.setText("Modo atual: Binaria Normal.");
 
-        JScrollPane scrollMensagem = new JScrollPane(areaMensagem);
-        scrollMensagem.setBorder(BorderFactory.createTitledBorder("Ultima acao"));
-        add(scrollMensagem, BorderLayout.SOUTH);
+        JScrollPane scroll = new JScrollPane(areaMensagem);
+        scroll.setBorder(BorderFactory.createTitledBorder("Ultima acao"));
+        add(scroll, BorderLayout.SOUTH);
     }
 
-    private void alterarModoSelecionado() {
-        if (atualizandoModo) {
-            return;
-        }
-
-        arvore.alterarModo(getModoSelecionado());
-        areaMensagem.setText(arvore.getUltimoRelatorioInsercao());
+    private void trocarModo() {
+        arvore.setModoAVL("AVL".equals(comboModo.getSelectedItem()));
+        areaMensagem.setText("Modo atual: " + arvore.getModoTexto() + ".");
         atualizarVisualizacao();
     }
 
-    private String getModoSelecionado() {
-        Object itemSelecionado = comboModo.getSelectedItem();
-        if ("AVL".equals(itemSelecionado)) {
-            return Arvore.MODO_AVL;
-        }
-        return Arvore.MODO_BINARIA;
-    }
-
     private void atualizarComboModo() {
-        atualizandoModo = true;
-        comboModo.setSelectedItem(arvore.isModoAVL() ? "AVL" : "Binaria Normal");
-        atualizandoModo = false;
-    }
-
-    private void importarArvore() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Importar Arvore de TXT");
-
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            try {
-                String path = fileChooser.getSelectedFile().getAbsolutePath();
-                arvore.importarDeTxt(path);
-                atualizarComboModo();
-                areaMensagem.setText(arvore.getUltimoRelatorioInsercao());
-                atualizarVisualizacao();
-                JOptionPane.showMessageDialog(this, "Arvore importada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Erro ao importar arquivo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-            }
+        if (arvore.isModoAVL()) {
+            comboModo.setSelectedItem("AVL");
+        } else {
+            comboModo.setSelectedItem("Binaria Normal");
         }
     }
 
@@ -137,24 +106,21 @@ public class TelaArvore extends JFrame {
             }
 
             int numero = Integer.parseInt(texto);
-
             if (numero == -1) {
                 JOptionPane.showMessageDialog(this, "O valor -1 nao e permitido.", "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            boolean inserido = arvore.inserir(numero);
+            ResultadoInsercao resultado = arvore.inserir(numero);
+            areaMensagem.setText(resultado.mensagem);
 
-            if (!inserido) {
-                areaMensagem.setText(arvore.getUltimoRelatorioInsercao());
-                JOptionPane.showMessageDialog(this, "Numero " + numero + " ja existe!", "Aviso", JOptionPane.WARNING_MESSAGE);
+            if (!resultado.inserido) {
+                JOptionPane.showMessageDialog(this, resultado.mensagem, "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            areaMensagem.setText(arvore.getUltimoRelatorioInsercao());
             campoNumero.setText("");
             atualizarVisualizacao();
-
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Digite apenas numeros inteiros.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
@@ -162,7 +128,7 @@ public class TelaArvore extends JFrame {
 
     private void limparArvore() {
         arvore.limpar();
-        areaMensagem.setText(arvore.getUltimoRelatorioInsercao());
+        areaMensagem.setText("Arvore limpa.");
         atualizarVisualizacao();
     }
 
@@ -178,10 +144,28 @@ public class TelaArvore extends JFrame {
                 }
 
                 arvore.salvarEmTxt(path);
-                areaMensagem.setText("Arvore salva em: " + path);
+                areaMensagem.setText("Arvore salva com sucesso.");
                 JOptionPane.showMessageDialog(this, "Arvore salva com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, "Erro ao salvar arquivo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void importarArvore() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Importar Arvore de TXT");
+
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try {
+                String path = fileChooser.getSelectedFile().getAbsolutePath();
+                arvore.importarDeTxt(path);
+                atualizarComboModo();
+                areaMensagem.setText("Arvore importada com modo " + arvore.getModoTexto() + ".");
+                atualizarVisualizacao();
+                JOptionPane.showMessageDialog(this, "Arvore importada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Erro ao importar arquivo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -193,17 +177,14 @@ public class TelaArvore extends JFrame {
         }
 
         if (arvore.isModoAVL()) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "A inversao nao esta disponivel no modo AVL, pois quebra a regra da arvore de busca.",
-                    "Aviso",
-                    JOptionPane.WARNING_MESSAGE
-            );
+            String mensagem = "A inversao nao esta disponivel no modo AVL, pois quebra a regra da arvore de busca.";
+            areaMensagem.setText(mensagem);
+            JOptionPane.showMessageDialog(this, mensagem, "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         arvore.inverter();
-        areaMensagem.setText(arvore.getUltimoRelatorioInsercao());
+        areaMensagem.setText("Arvore invertida.");
         atualizarVisualizacao();
     }
 
@@ -234,7 +215,7 @@ public class TelaArvore extends JFrame {
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
 
         JScrollPane scroll = new JScrollPane(textArea);
-        scroll.setPreferredSize(new Dimension(650, 420));
+        scroll.setPreferredSize(new Dimension(620, 420));
 
         JOptionPane.showMessageDialog(this, scroll, "Estatisticas da Arvore", JOptionPane.INFORMATION_MESSAGE);
     }
@@ -245,7 +226,6 @@ public class TelaArvore extends JFrame {
         }
 
         int valor = no.getValor();
-
         sb.append(String.format(
                 "No: %-4d | Altura: %d | Nivel: %d | Profundidade: %d | Balanco: %d | Tipo: %s%n",
                 valor,

@@ -3,9 +3,9 @@ import java.awt.*;
 
 public class PainelArvore extends JPanel {
 
-    private final Arvore arvore;
-    private final int RAIO = 22;
-    private final int ALTURA_NIVEL = 95;
+    private Arvore arvore;
+    private final int RAIO = 20;
+    private final int ALTURA_NIVEL = 90;
 
     public PainelArvore(Arvore arvore) {
         this.arvore = arvore;
@@ -14,9 +14,9 @@ public class PainelArvore extends JPanel {
 
     @Override
     public Dimension getPreferredSize() {
-        int altura = (arvore.getAltura() + 1) * ALTURA_NIVEL + 140;
-        int largura = (int) Math.pow(2, Math.max(0, arvore.getAltura())) * 60 + 250;
-        return new Dimension(Math.max(850, largura), Math.max(650, altura));
+        int altura = (arvore.getAltura() + 1) * ALTURA_NIVEL + 120;
+        int largura = (int) Math.pow(2, Math.max(0, arvore.getAltura())) * 55 + 220;
+        return new Dimension(Math.max(800, largura), Math.max(600, altura));
     }
 
     @Override
@@ -26,7 +26,7 @@ public class PainelArvore extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         if (arvore.getRaiz() != null) {
-            desenharArvore(g2, arvore.getRaiz(), getWidth() / 2, 50, Math.max(120, getWidth() / 4));
+            desenharArvore(g2, arvore.getRaiz(), getWidth() / 2, 40, getWidth() / 4);
         }
     }
 
@@ -35,21 +35,21 @@ public class PainelArvore extends JPanel {
             return;
         }
 
-        int proximoEspacamento = Math.max(45, espacamento / 2);
+        int proximoEspacamento = Math.max(40, espacamento / 2);
 
         g.setColor(Color.BLACK);
 
         if (no.getEsquerda() != null) {
             int proximoX = x - espacamento;
             int proximoY = y + ALTURA_NIVEL;
-            g.drawLine(x, y + RAIO, proximoX, proximoY - RAIO);
+            g.drawLine(x, y, proximoX, proximoY);
             desenharArvore(g, no.getEsquerda(), proximoX, proximoY, proximoEspacamento);
         }
 
         if (no.getDireita() != null) {
             int proximoX = x + espacamento;
             int proximoY = y + ALTURA_NIVEL;
-            g.drawLine(x, y + RAIO, proximoX, proximoY - RAIO);
+            g.drawLine(x, y, proximoX, proximoY);
             desenharArvore(g, no.getDireita(), proximoX, proximoY, proximoEspacamento);
         }
 
@@ -57,23 +57,20 @@ public class PainelArvore extends JPanel {
         g.fillOval(x - RAIO, y - RAIO, RAIO * 2, RAIO * 2);
 
         g.setColor(Color.BLACK);
-        g.setStroke(new BasicStroke(2));
         g.drawOval(x - RAIO, y - RAIO, RAIO * 2, RAIO * 2);
 
+        String valor = String.valueOf(no.getValor());
+        String balanco = "b: " + arvore.calcularBalanceamento(no);
+
+        FontMetrics fm = g.getFontMetrics();
+        int larguraValor = fm.stringWidth(valor);
+        g.drawString(valor, x - larguraValor / 2, y + 5);
+
         Font fonteOriginal = g.getFont();
-        String textoValor = String.valueOf(no.getValor());
-        String textoBalanco = "b: " + arvore.calcularBalanceamento(no);
-
-        g.setFont(fonteOriginal.deriveFont(Font.BOLD, 12f));
-        FontMetrics metricaValor = g.getFontMetrics();
-        int larguraValor = metricaValor.stringWidth(textoValor);
-        g.drawString(textoValor, x - larguraValor / 2, y + 4);
-
-        g.setFont(fonteOriginal.deriveFont(Font.PLAIN, 11f));
-        FontMetrics metricaBalanco = g.getFontMetrics();
-        int larguraBalanco = metricaBalanco.stringWidth(textoBalanco);
-        g.drawString(textoBalanco, x - larguraBalanco / 2, y + RAIO + 16);
-
+        g.setFont(new Font(fonteOriginal.getName(), Font.PLAIN, 11));
+        FontMetrics fmBalanco = g.getFontMetrics();
+        int larguraBalanco = fmBalanco.stringWidth(balanco);
+        g.drawString(balanco, x - larguraBalanco / 2, y + 35);
         g.setFont(fonteOriginal);
     }
 }

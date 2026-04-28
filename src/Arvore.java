@@ -7,124 +7,111 @@ import java.util.List;
 
 public class Arvore {
 
-    public static final String MODO_BINARIA = "BINARIA";
-    public static final String MODO_AVL = "AVL";
-
     private No raiz;
-    private String modo;
-    private String ultimoRelatorioInsercao;
+    private boolean modoAVL;
 
-    public Arvore() {
-        modo = MODO_BINARIA;
-        ultimoRelatorioInsercao = "Modo atual: Binaria Normal.";
-    }
-
-    public boolean inserir(int valor) {
+    public ResultadoInsercao inserir(int valor) {
         if (buscar(valor)) {
-            ultimoRelatorioInsercao = "Valor " + valor + " ja existe na arvore.";
-            return false;
+            return new ResultadoInsercao(false, "Numero " + valor + " ja existe na arvore.");
         }
 
-        if (isModoAVL()) {
-            ultimoRelatorioInsercao = "";
-            raiz = inserirAVL(raiz, valor);
+        StringBuilder mensagem = new StringBuilder();
 
-            if (ultimoRelatorioInsercao.isEmpty()) {
-                ultimoRelatorioInsercao = montarRelatorioSemRotacao(valor);
+        if (modoAVL) {
+            raiz = inserirAVL(raiz, valor, mensagem);
+
+            if (mensagem.length() == 0) {
+                mensagem.append("Valor inserido: ").append(valor).append("\n");
+                mensagem.append("A arvore continuou balanceada.\n");
+                mensagem.append("Nenhuma rotacao foi necessaria.");
             }
         } else {
             raiz = inserirRec(raiz, valor);
-            ultimoRelatorioInsercao = "Valor inserido: " + valor
-                    + "\nModo atual: Binaria Normal."
-                    + "\nNenhum balanceamento foi realizado.";
+            mensagem.append("Valor inserido: ").append(valor).append("\n");
+            mensagem.append("Modo atual: Binaria Normal.\n");
+            mensagem.append("Nenhum balanceamento foi realizado.");
         }
 
-        return true;
+        return new ResultadoInsercao(true, mensagem.toString());
     }
 
-    private No inserirRec(No nodo, int valor) {
-        if (nodo == null) {
-            return new No(valor);
-        }
-
-        if (valor < nodo.getValor()) {
-            nodo.setEsquerda(inserirRec(nodo.getEsquerda(), valor));
-        } else if (valor > nodo.getValor()) {
-            nodo.setDireita(inserirRec(nodo.getDireita(), valor));
-        }
-
-        return nodo;
-    }
-
-    private No inserirAVL(No no, int valor) {
+    private No inserirRec(No no, int valor) {
         if (no == null) {
             return new No(valor);
         }
 
         if (valor < no.getValor()) {
-            no.setEsquerda(inserirAVL(no.getEsquerda(), valor));
+            no.setEsquerda(inserirRec(no.getEsquerda(), valor));
         } else if (valor > no.getValor()) {
-            no.setDireita(inserirAVL(no.getDireita(), valor));
+            no.setDireita(inserirRec(no.getDireita(), valor));
+        }
+
+        return no;
+    }
+
+    private No inserirAVL(No no, int valor, StringBuilder mensagem) {
+        if (no == null) {
+            return new No(valor);
+        }
+
+        if (valor < no.getValor()) {
+            no.setEsquerda(inserirAVL(no.getEsquerda(), valor, mensagem));
+        } else if (valor > no.getValor()) {
+            no.setDireita(inserirAVL(no.getDireita(), valor, mensagem));
         } else {
             return no;
         }
 
-        int balanceamento = calcularBalanceamento(no);
+        int balanco = calcularBalanceamento(no);
 
-        if (balanceamento > 1 && valor < no.getEsquerda().getValor()) {
-            int valorFilho = no.getEsquerda().getValor();
-            ultimoRelatorioInsercao = montarRelatorioRotacao(
+        if (balanco > 1 && valor < no.getEsquerda().getValor()) {
+            mensagem.append(criarMensagemRotacao(
                     valor,
                     no.getValor(),
-                    balanceamento,
+                    balanco,
                     "Rotacao simples para a direita",
                     no.getValor(),
-                    valorFilho
-            );
+                    no.getEsquerda().getValor()
+            ));
             return rotacaoDireita(no);
         }
 
-        if (balanceamento < -1 && valor > no.getDireita().getValor()) {
-            int valorFilho = no.getDireita().getValor();
-            ultimoRelatorioInsercao = montarRelatorioRotacao(
+        if (balanco < -1 && valor > no.getDireita().getValor()) {
+            mensagem.append(criarMensagemRotacao(
                     valor,
                     no.getValor(),
-                    balanceamento,
+                    balanco,
                     "Rotacao simples para a esquerda",
                     no.getValor(),
-                    valorFilho
-            );
+                    no.getDireita().getValor()
+            ));
             return rotacaoEsquerda(no);
         }
 
-        if (balanceamento > 1 && valor > no.getEsquerda().getValor()) {
-            int valorFilho = no.getEsquerda().getValor();
-            int valorNeto = no.getEsquerda().getDireita().getValor();
-            ultimoRelatorioInsercao = montarRelatorioRotacao(
+        if (balanco > 1 && valor > no.getEsquerda().getValor()) {
+            mensagem.append(criarMensagemRotacao(
                     valor,
                     no.getValor(),
-                    balanceamento,
+                    balanco,
                     "Rotacao dupla a direita",
                     no.getValor(),
-                    valorFilho,
-                    valorNeto
-            );
+                    no.getEsquerda().getValor(),
+                    no.getEsquerda().getDireita().getValor()
+            ));
             no.setEsquerda(rotacaoEsquerda(no.getEsquerda()));
             return rotacaoDireita(no);
         }
 
-        if (balanceamento < -1 && valor < no.getDireita().getValor()) {
-            int valorFilho = no.getDireita().getValor();
-            int valorNeto = no.getDireita().getEsquerda().getValor();
-            ultimoRelatorioInsercao = montarRelatorioRotacao(
+        if (balanco < -1 && valor < no.getDireita().getValor()) {
+            mensagem.append(criarMensagemRotacao(
                     valor,
                     no.getValor(),
-                    balanceamento,
+                    balanco,
                     "Rotacao dupla a esquerda",
                     no.getValor(),
-                    valorFilho,
-                    valorNeto
-            );
+                    no.getDireita().getValor(),
+                    no.getDireita().getEsquerda().getValor()
+            ));
             no.setDireita(rotacaoDireita(no.getDireita()));
             return rotacaoEsquerda(no);
         }
@@ -132,73 +119,67 @@ public class Arvore {
         return no;
     }
 
+    private String criarMensagemRotacao(int valorInserido, int noDesbalanceado, int balanco,
+                                        String metodo, int... nosAlterados) {
+        StringBuilder texto = new StringBuilder();
+        texto.append("Valor inserido: ").append(valorInserido).append("\n");
+        texto.append("No desbalanceado: ").append(noDesbalanceado).append("\n");
+        texto.append("Fator de balanco: ").append(balanco).append("\n");
+        texto.append("Metodo usado: ").append(metodo).append("\n");
+        texto.append("Nos alterados: ");
+
+        for (int i = 0; i < nosAlterados.length; i++) {
+            if (i > 0) {
+                if (i == nosAlterados.length - 1) {
+                    texto.append(" e ");
+                } else {
+                    texto.append(", ");
+                }
+            }
+            texto.append(nosAlterados[i]);
+        }
+
+        return texto.toString();
+    }
+
     private No rotacaoDireita(No no) {
         No novaRaiz = no.getEsquerda();
-        No subArvore = novaRaiz.getDireita();
+        No temp = novaRaiz.getDireita();
 
         novaRaiz.setDireita(no);
-        no.setEsquerda(subArvore);
+        no.setEsquerda(temp);
 
         return novaRaiz;
     }
 
     private No rotacaoEsquerda(No no) {
         No novaRaiz = no.getDireita();
-        No subArvore = novaRaiz.getEsquerda();
+        No temp = novaRaiz.getEsquerda();
 
         novaRaiz.setEsquerda(no);
-        no.setDireita(subArvore);
+        no.setDireita(temp);
 
         return novaRaiz;
-    }
-
-    private String montarRelatorioSemRotacao(int valor) {
-        return "Valor inserido: " + valor
-                + "\nA arvore continuou balanceada."
-                + "\nNenhuma rotacao foi necessaria.";
-    }
-
-    private String montarRelatorioRotacao(int valorInserido, int noDesbalanceado, int balanceamento,
-                                          String metodo, int... nosAlterados) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Valor inserido: ").append(valorInserido).append("\n");
-        sb.append("No desbalanceado: ").append(noDesbalanceado).append("\n");
-        sb.append("Fator de balanco: ").append(balanceamento).append("\n");
-        sb.append("Metodo usado: ").append(metodo).append("\n");
-        sb.append("Nos alterados: ");
-
-        for (int i = 0; i < nosAlterados.length; i++) {
-            if (i > 0) {
-                if (i == nosAlterados.length - 1) {
-                    sb.append(" e ");
-                } else {
-                    sb.append(", ");
-                }
-            }
-            sb.append(nosAlterados[i]);
-        }
-
-        return sb.toString();
     }
 
     public boolean buscar(int valor) {
         return buscarRec(raiz, valor);
     }
 
-    private boolean buscarRec(No nodo, int valor) {
-        if (nodo == null) {
+    private boolean buscarRec(No no, int valor) {
+        if (no == null) {
             return false;
         }
 
-        if (valor == nodo.getValor()) {
+        if (valor == no.getValor()) {
             return true;
         }
 
-        if (valor < nodo.getValor()) {
-            return buscarRec(nodo.getEsquerda(), valor);
+        if (valor < no.getValor()) {
+            return buscarRec(no.getEsquerda(), valor);
         }
 
-        return buscarRec(nodo.getDireita(), valor);
+        return buscarRec(no.getDireita(), valor);
     }
 
     public No getRaiz() {
@@ -207,19 +188,33 @@ public class Arvore {
 
     public void limpar() {
         raiz = null;
-        ultimoRelatorioInsercao = "Arvore limpa.";
+    }
+
+    public boolean isModoAVL() {
+        return modoAVL;
+    }
+
+    public void setModoAVL(boolean modoAVL) {
+        this.modoAVL = modoAVL;
+    }
+
+    public String getModoTexto() {
+        if (modoAVL) {
+            return "AVL";
+        }
+        return "Binaria Normal";
     }
 
     public int getAltura() {
-        return altura(raiz);
+        return calcularAltura(raiz);
     }
 
-    private int altura(No no) {
+    private int calcularAltura(No no) {
         if (no == null) {
             return -1;
         }
 
-        return 1 + Math.max(altura(no.getEsquerda()), altura(no.getDireita()));
+        return 1 + Math.max(calcularAltura(no.getEsquerda()), calcularAltura(no.getDireita()));
     }
 
     public int calcularBalanceamento(No no) {
@@ -227,7 +222,7 @@ public class Arvore {
             return 0;
         }
 
-        return altura(no.getEsquerda()) - altura(no.getDireita());
+        return calcularAltura(no.getEsquerda()) - calcularAltura(no.getDireita());
     }
 
     public int getProfundidadeArvore() {
@@ -242,6 +237,7 @@ public class Arvore {
         if (no == null) {
             return -1;
         }
+
         if (no.getValor() == valor) {
             return nivel;
         }
@@ -259,48 +255,51 @@ public class Arvore {
     }
 
     public List<Integer> preOrdem() {
-        List<Integer> resultado = new ArrayList<>();
-        preOrdemRec(raiz, resultado);
-        return resultado;
+        List<Integer> lista = new ArrayList<>();
+        preOrdemRec(raiz, lista);
+        return lista;
     }
 
-    private void preOrdemRec(No no, List<Integer> res) {
+    private void preOrdemRec(No no, List<Integer> lista) {
         if (no == null) {
             return;
         }
-        res.add(no.getValor());
-        preOrdemRec(no.getEsquerda(), res);
-        preOrdemRec(no.getDireita(), res);
+
+        lista.add(no.getValor());
+        preOrdemRec(no.getEsquerda(), lista);
+        preOrdemRec(no.getDireita(), lista);
     }
 
     public List<Integer> emOrdem() {
-        List<Integer> resultado = new ArrayList<>();
-        emOrdemRec(raiz, resultado);
-        return resultado;
+        List<Integer> lista = new ArrayList<>();
+        emOrdemRec(raiz, lista);
+        return lista;
     }
 
-    private void emOrdemRec(No no, List<Integer> res) {
+    private void emOrdemRec(No no, List<Integer> lista) {
         if (no == null) {
             return;
         }
-        emOrdemRec(no.getEsquerda(), res);
-        res.add(no.getValor());
-        emOrdemRec(no.getDireita(), res);
+
+        emOrdemRec(no.getEsquerda(), lista);
+        lista.add(no.getValor());
+        emOrdemRec(no.getDireita(), lista);
     }
 
     public List<Integer> posOrdem() {
-        List<Integer> resultado = new ArrayList<>();
-        posOrdemRec(raiz, resultado);
-        return resultado;
+        List<Integer> lista = new ArrayList<>();
+        posOrdemRec(raiz, lista);
+        return lista;
     }
 
-    private void posOrdemRec(No no, List<Integer> res) {
+    private void posOrdemRec(No no, List<Integer> lista) {
         if (no == null) {
             return;
         }
-        posOrdemRec(no.getEsquerda(), res);
-        posOrdemRec(no.getDireita(), res);
-        res.add(no.getValor());
+
+        posOrdemRec(no.getEsquerda(), lista);
+        posOrdemRec(no.getDireita(), lista);
+        lista.add(no.getValor());
     }
 
     public List<Integer> getCaminho(int valor) {
@@ -374,51 +373,52 @@ public class Arvore {
                 && verificarFolhasMesmoNivel(no.getDireita(), profundidade, nivel + 1);
     }
 
-    private boolean isCompleta(No no, int index, int totalNos) {
+    private boolean isCompleta(No no, int indice, int totalNos) {
         if (no == null) {
             return true;
         }
 
-        if (index >= totalNos) {
+        if (indice >= totalNos) {
             return false;
         }
 
-        return isCompleta(no.getEsquerda(), 2 * index + 1, totalNos)
-                && isCompleta(no.getDireita(), 2 * index + 2, totalNos);
+        return isCompleta(no.getEsquerda(), 2 * indice + 1, totalNos)
+                && isCompleta(no.getDireita(), 2 * indice + 2, totalNos);
     }
 
     private int contarNos(No no) {
         if (no == null) {
             return 0;
         }
+
         return 1 + contarNos(no.getEsquerda()) + contarNos(no.getDireita());
     }
 
     public String getRepresentacaoParenteses() {
-        StringBuilder sb = new StringBuilder();
-        gerarRepresentacaoParenteses(raiz, sb);
-        return sb.toString();
+        StringBuilder texto = new StringBuilder();
+        gerarRepresentacaoParenteses(raiz, texto);
+        return texto.toString();
     }
 
-    private void gerarRepresentacaoParenteses(No no, StringBuilder sb) {
+    private void gerarRepresentacaoParenteses(No no, StringBuilder texto) {
         if (no == null) {
-            sb.append("()");
+            texto.append("()");
             return;
         }
 
-        sb.append("(").append(no.getValor());
+        texto.append("(").append(no.getValor());
         if (no.getEsquerda() != null || no.getDireita() != null) {
-            sb.append(" ");
-            gerarRepresentacaoParenteses(no.getEsquerda(), sb);
-            sb.append(" ");
-            gerarRepresentacaoParenteses(no.getDireita(), sb);
+            texto.append(" ");
+            gerarRepresentacaoParenteses(no.getEsquerda(), texto);
+            texto.append(" ");
+            gerarRepresentacaoParenteses(no.getDireita(), texto);
         }
-        sb.append(")");
+        texto.append(")");
     }
 
     public void salvarEmTxt(String caminhoArquivo) throws IOException {
         try (PrintWriter writer = new PrintWriter(caminhoArquivo)) {
-            writer.println("Modo: " + modo);
+            writer.println("Modo: " + (modoAVL ? "AVL" : "BINARIA"));
             writer.println("Representacao Parenteses: " + getRepresentacaoParenteses());
             writer.println("Tipo da Arvore: " + getTipoArvore());
             writer.println("Altura da Arvore: " + getAltura());
@@ -439,14 +439,13 @@ public class Arvore {
 
         int valor = no.getValor();
         writer.printf(
-                "Valor: %d | Tipo: %s | Nivel: %d | Altura: %d | Profundidade: %d | Balanco: %d | Caminho: %s%n",
+                "No: %d | Altura: %d | Nivel: %d | Profundidade: %d | Balanco: %d | Tipo: %s%n",
                 valor,
-                no.getTipo(),
-                getNivel(valor),
                 no.getAltura(),
+                getNivel(valor),
                 getProfundidadeNo(valor),
                 calcularBalanceamento(no),
-                getCaminho(valor)
+                no.getTipo().toLowerCase()
         );
 
         escreverDetalhesNos(no.getEsquerda(), writer);
@@ -455,93 +454,80 @@ public class Arvore {
 
     public void importarDeTxt(String caminhoArquivo) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(caminhoArquivo))) {
-            String primeiraLinha = reader.readLine();
-            if (primeiraLinha == null) {
+            String linha = reader.readLine();
+            if (linha == null) {
                 throw new IOException("Arquivo vazio.");
             }
 
-            String linhaRepresentacao = primeiraLinha;
-
-            if (primeiraLinha.startsWith("Modo:")) {
-                setModo(primeiraLinha.substring(primeiraLinha.indexOf(':') + 1).trim());
-                linhaRepresentacao = reader.readLine();
+            if (linha.startsWith("Modo:")) {
+                String modo = linha.substring(linha.indexOf(':') + 1).trim();
+                modoAVL = modo.equalsIgnoreCase("AVL");
+                linha = reader.readLine();
             } else {
-                setModo(MODO_BINARIA);
+                modoAVL = false;
             }
 
-            if (linhaRepresentacao == null) {
+            if (linha == null) {
                 throw new IOException("Representacao da arvore nao encontrada.");
             }
 
-            String representacao = extrairRepresentacao(linhaRepresentacao);
-            if (representacao.isEmpty()) {
-                throw new IOException("Representacao da arvore invalida.");
-            }
-
+            String representacao = linha.substring(linha.indexOf(':') + 1).trim();
             raiz = parseRepresentacao(representacao);
-            ultimoRelatorioInsercao = "Arvore importada com modo " + getModoTexto() + ".";
         }
     }
 
-    private String extrairRepresentacao(String linha) {
-        int indiceDoisPontos = linha.indexOf(':');
-        if (indiceDoisPontos == -1) {
-            return linha.trim();
-        }
-        return linha.substring(indiceDoisPontos + 1).trim();
-    }
-
-    private No parseRepresentacao(String s) {
-        s = s.trim();
-        if (s.equals("()")) {
+    private No parseRepresentacao(String texto) {
+        texto = texto.trim();
+        if (texto.equals("()")) {
             return null;
         }
 
-        if (s.startsWith("(") && s.endsWith(")")) {
-            s = s.substring(1, s.length() - 1).trim();
+        if (texto.startsWith("(") && texto.endsWith(")")) {
+            texto = texto.substring(1, texto.length() - 1).trim();
         }
 
-        if (s.isEmpty()) {
+        if (texto.isEmpty()) {
             return null;
         }
 
-        int primeiroEspaco = s.indexOf(' ');
+        int primeiroEspaco = texto.indexOf(' ');
         if (primeiroEspaco == -1) {
-            return new No(Integer.parseInt(s));
+            return new No(Integer.parseInt(texto));
         }
 
-        int valor = Integer.parseInt(s.substring(0, primeiroEspaco));
-        String resto = s.substring(primeiroEspaco).trim();
+        int valor = Integer.parseInt(texto.substring(0, primeiroEspaco));
+        String resto = texto.substring(primeiroEspaco).trim();
 
         No no = new No(valor);
         List<String> subgrupos = extrairSubgrupos(resto);
 
-        if (!subgrupos.isEmpty()) {
+        if (subgrupos.size() >= 1) {
             no.setEsquerda(parseRepresentacao(subgrupos.get(0)));
         }
-        if (subgrupos.size() > 1) {
+        if (subgrupos.size() >= 2) {
             no.setDireita(parseRepresentacao(subgrupos.get(1)));
         }
 
         return no;
     }
 
-    private List<String> extrairSubgrupos(String s) {
+    private List<String> extrairSubgrupos(String texto) {
         List<String> subgrupos = new ArrayList<>();
-        int balance = 0;
+        int balanco = 0;
         int inicio = -1;
 
-        for (int i = 0; i < s.length(); i++) {
-            char caractere = s.charAt(i);
-            if (caractere == '(') {
-                if (balance == 0) {
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+
+            if (c == '(') {
+                if (balanco == 0) {
                     inicio = i;
                 }
-                balance++;
-            } else if (caractere == ')') {
-                balance--;
-                if (balance == 0 && inicio != -1) {
-                    subgrupos.add(s.substring(inicio, i + 1));
+                balanco++;
+            } else if (c == ')') {
+                balanco--;
+                if (balanco == 0 && inicio != -1) {
+                    subgrupos.add(texto.substring(inicio, i + 1));
                     inicio = -1;
                 }
             }
@@ -552,7 +538,6 @@ public class Arvore {
 
     public void inverter() {
         raiz = inverterRec(raiz);
-        ultimoRelatorioInsercao = "Arvore invertida no modo Binaria Normal.";
     }
 
     private No inverterRec(No no) {
@@ -582,59 +567,5 @@ public class Arvore {
         int direita = calcularNivelMaximo(no.getDireita(), nivel + 1);
 
         return Math.max(esquerda, direita);
-    }
-
-    public String getModo() {
-        return modo;
-    }
-
-    public String getModoTexto() {
-        if (isModoAVL()) {
-            return "AVL";
-        }
-        return "Binaria Normal";
-    }
-
-    public boolean isModoAVL() {
-        return MODO_AVL.equals(modo);
-    }
-
-    public void setModo(String novoModo) {
-        modo = normalizarModo(novoModo);
-    }
-
-    public void alterarModo(String novoModo) {
-        String modoNormalizado = normalizarModo(novoModo);
-
-        if (modo.equals(modoNormalizado)) {
-            ultimoRelatorioInsercao = "Modo atual: " + getModoTexto() + ".";
-            return;
-        }
-
-        List<Integer> valores = preOrdem();
-        raiz = null;
-        modo = modoNormalizado;
-
-        for (int valor : valores) {
-            inserir(valor);
-        }
-
-        if (valores.isEmpty()) {
-            ultimoRelatorioInsercao = "Modo alterado para " + getModoTexto() + ".";
-        } else {
-            ultimoRelatorioInsercao = "Modo alterado para " + getModoTexto()
-                    + ".\nA arvore foi montada de novo com os valores atuais.";
-        }
-    }
-
-    public String getUltimoRelatorioInsercao() {
-        return ultimoRelatorioInsercao;
-    }
-
-    private String normalizarModo(String novoModo) {
-        if (MODO_AVL.equalsIgnoreCase(novoModo)) {
-            return MODO_AVL;
-        }
-        return MODO_BINARIA;
     }
 }
