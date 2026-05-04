@@ -4,16 +4,16 @@ import java.io.IOException;
 
 public class TelaArvore extends JFrame {
 
-    private Arvore arvore;
+    private final Arvore arvore;
     private JTextField campoNumero;
     private JComboBox<String> comboModo;
-    private JTextArea areaMensagem;
+    private JTextArea areaLog;
     private PainelArvore painelArvore;
 
     public TelaArvore() {
         arvore = new Arvore();
 
-        setTitle("Arvore Binaria");
+        setTitle("Arvore Binaria e AVL");
         setSize(1000, 730);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -21,7 +21,7 @@ public class TelaArvore extends JFrame {
 
         montarPainelControle();
         montarPainelArvore();
-        montarPainelMensagem();
+        montarPainelLog();
     }
 
     private void montarPainelControle() {
@@ -40,6 +40,7 @@ public class TelaArvore extends JFrame {
         JButton botaoImportar = new JButton("Importar TXT");
         JButton botaoInfo = new JButton("Info Arvore");
         JButton botaoInverter = new JButton("Inverter Arvore");
+        JButton botaoQuestoesAVL = new JButton("Questoes AVL");
 
         painelControle.add(labelValor);
         painelControle.add(campoNumero);
@@ -51,6 +52,7 @@ public class TelaArvore extends JFrame {
         painelControle.add(botaoImportar);
         painelControle.add(botaoInfo);
         painelControle.add(botaoInverter);
+        painelControle.add(botaoQuestoesAVL);
 
         add(painelControle, BorderLayout.NORTH);
 
@@ -60,6 +62,7 @@ public class TelaArvore extends JFrame {
         botaoImportar.addActionListener(e -> importarArvore());
         botaoInfo.addActionListener(e -> mostrarInfo());
         botaoInverter.addActionListener(e -> inverterArvore());
+        botaoQuestoesAVL.addActionListener(e -> mostrarQuestoesAVL());
         campoNumero.addActionListener(e -> inserirValor());
         comboModo.addActionListener(e -> trocarModo());
     }
@@ -72,21 +75,22 @@ public class TelaArvore extends JFrame {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void montarPainelMensagem() {
-        areaMensagem = new JTextArea(5, 30);
-        areaMensagem.setEditable(false);
-        areaMensagem.setLineWrap(true);
-        areaMensagem.setWrapStyleWord(true);
-        areaMensagem.setText("Modo atual: Binaria Normal.");
+    private void montarPainelLog() {
+        areaLog = new JTextArea(9, 30);
+        areaLog.setEditable(false);
+        areaLog.setLineWrap(true);
+        areaLog.setWrapStyleWord(true);
+        areaLog.setText("Modo atual: Binaria Normal.");
 
-        JScrollPane scroll = new JScrollPane(areaMensagem);
-        scroll.setBorder(BorderFactory.createTitledBorder("Ultima acao"));
+        JScrollPane scroll = new JScrollPane(areaLog);
+        scroll.setBorder(BorderFactory.createTitledBorder("Historico"));
         add(scroll, BorderLayout.SOUTH);
     }
 
     private void trocarModo() {
         arvore.setModoAVL("AVL".equals(comboModo.getSelectedItem()));
-        areaMensagem.setText("Modo atual: " + arvore.getModoTexto() + ".");
+        arvore.registrarAcao("Modo atual: " + arvore.getModoTexto() + ".");
+        atualizarAreaLog();
         atualizarVisualizacao();
     }
 
@@ -112,7 +116,7 @@ public class TelaArvore extends JFrame {
             }
 
             ResultadoInsercao resultado = arvore.inserir(numero);
-            areaMensagem.setText(resultado.mensagem);
+            atualizarAreaLog();
 
             if (!resultado.inserido) {
                 JOptionPane.showMessageDialog(this, resultado.mensagem, "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -128,7 +132,7 @@ public class TelaArvore extends JFrame {
 
     private void limparArvore() {
         arvore.limpar();
-        areaMensagem.setText("Arvore limpa.");
+        areaLog.setText("Arvore limpa.\nHistorico limpo.");
         atualizarVisualizacao();
     }
 
@@ -144,7 +148,8 @@ public class TelaArvore extends JFrame {
                 }
 
                 arvore.salvarEmTxt(path);
-                areaMensagem.setText("Arvore salva com sucesso.");
+                arvore.registrarAcao("Arvore salva em TXT.");
+                atualizarAreaLog();
                 JOptionPane.showMessageDialog(this, "Arvore salva com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, "Erro ao salvar arquivo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
@@ -161,7 +166,7 @@ public class TelaArvore extends JFrame {
                 String path = fileChooser.getSelectedFile().getAbsolutePath();
                 arvore.importarDeTxt(path);
                 atualizarComboModo();
-                areaMensagem.setText("Arvore importada com modo " + arvore.getModoTexto() + ".");
+                atualizarAreaLog();
                 atualizarVisualizacao();
                 JOptionPane.showMessageDialog(this, "Arvore importada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
@@ -178,13 +183,15 @@ public class TelaArvore extends JFrame {
 
         if (arvore.isModoAVL()) {
             String mensagem = "A inversao nao esta disponivel no modo AVL, pois quebra a regra da arvore de busca.";
-            areaMensagem.setText(mensagem);
+            arvore.registrarAcao(mensagem);
+            atualizarAreaLog();
             JOptionPane.showMessageDialog(this, mensagem, "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         arvore.inverter();
-        areaMensagem.setText("Arvore invertida.");
+        arvore.registrarAcao("Arvore invertida.");
+        atualizarAreaLog();
         atualizarVisualizacao();
     }
 
@@ -196,48 +203,61 @@ public class TelaArvore extends JFrame {
 
         StringBuilder sb = new StringBuilder();
         sb.append("--- Geral ---\n");
-        sb.append("Modo da Arvore: ").append(arvore.getModoTexto()).append("\n");
-        sb.append("Tipo da Arvore: ").append(arvore.getTipoArvore()).append("\n");
-        sb.append("Altura da Arvore: ").append(arvore.getAltura()).append("\n");
-        sb.append("Nivel da Arvore: ").append(arvore.getNivelArvore()).append("\n");
-        sb.append("Profundidade da Arvore: ").append(arvore.getProfundidadeArvore()).append("\n");
+        sb.append("Modo atual: ").append(arvore.getModoTexto()).append("\n");
+        sb.append("Tipo da arvore: ").append(arvore.getTipoArvore()).append("\n");
+        sb.append("Nos da arvore: ").append(arvore.emOrdem()).append("\n");
+        sb.append("Quantidade de nos: ").append(arvore.getQuantidadeNos()).append("\n");
+        sb.append("Altura da arvore: ").append(arvore.getAltura()).append("\n");
+        sb.append("Nivel da arvore: ").append(arvore.getNivelArvore()).append("\n");
+        sb.append("Profundidade da arvore: ").append(arvore.getProfundidadeArvore()).append("\n");
+        sb.append("Representacao parenteses: ").append(arvore.getRepresentacaoParenteses()).append("\n");
         sb.append("\n--- Percursos ---\n");
         sb.append("Pre-Ordem: ").append(arvore.preOrdem()).append("\n");
         sb.append("Em-Ordem: ").append(arvore.emOrdem()).append("\n");
         sb.append("Pos-Ordem: ").append(arvore.posOrdem()).append("\n");
-        sb.append("Representacao Parenteses: ").append(arvore.getRepresentacaoParenteses()).append("\n");
         sb.append("\n--- Detalhes por No ---\n");
-
-        adicionarDetalhesNos(arvore.getRaiz(), sb);
+        sb.append(arvore.getDetalhesNosTexto()).append("\n\n");
+        sb.append(arvore.getHistoricoInsercoesTexto()).append("\n\n");
+        sb.append(arvore.getHistoricoRotacoesTexto()).append("\n\n");
+        sb.append("Log geral:\n").append(arvore.getHistoricoGeralTexto());
 
         JTextArea textArea = new JTextArea(sb.toString());
         textArea.setEditable(false);
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
 
         JScrollPane scroll = new JScrollPane(textArea);
-        scroll.setPreferredSize(new Dimension(620, 420));
+        scroll.setPreferredSize(new Dimension(700, 450));
 
-        JOptionPane.showMessageDialog(this, scroll, "Estatisticas da Arvore", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, scroll, "Informacoes da Arvore", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private void adicionarDetalhesNos(No no, StringBuilder sb) {
-        if (no == null) {
-            return;
-        }
+    private void mostrarQuestoesAVL() {
+        String texto = "1. O que e uma arvore AVL?\n"
+                + "Resposta: E uma arvore binaria de busca que mantem o balanceamento dos nos.\n\n"
+                + "2. Como e calculado o fator de balanco?\n"
+                + "Resposta: Altura da subarvore esquerda menos altura da subarvore direita.\n\n"
+                + "3. Quando uma rotacao e necessaria?\n"
+                + "Resposta: Quando o fator de balanco fica menor que -1 ou maior que 1.\n\n"
+                + "4. Quais sao os tipos de rotacao?\n"
+                + "Resposta: Simples a direita, simples a esquerda, dupla a direita e dupla a esquerda.\n\n"
+                + "5. O que significa balanco 0?\n"
+                + "Resposta: As duas subarvores tem a mesma altura.";
 
-        int valor = no.getValor();
-        sb.append(String.format(
-                "No: %-4d | Altura: %d | Nivel: %d | Profundidade: %d | Balanco: %d | Tipo: %s%n",
-                valor,
-                no.getAltura(),
-                arvore.getNivel(valor),
-                arvore.getProfundidadeNo(valor),
-                arvore.calcularBalanceamento(no),
-                no.getTipo().toLowerCase()
-        ));
+        JTextArea textArea = new JTextArea(texto);
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setFont(new Font("SansSerif", Font.PLAIN, 13));
 
-        adicionarDetalhesNos(no.getEsquerda(), sb);
-        adicionarDetalhesNos(no.getDireita(), sb);
+        JScrollPane scroll = new JScrollPane(textArea);
+        scroll.setPreferredSize(new Dimension(520, 300));
+
+        JOptionPane.showMessageDialog(this, scroll, "Questoes AVL", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void atualizarAreaLog() {
+        areaLog.setText(arvore.getHistoricoGeralTexto());
+        areaLog.setCaretPosition(areaLog.getDocument().getLength());
     }
 
     private void atualizarVisualizacao() {
