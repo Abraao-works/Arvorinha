@@ -31,7 +31,7 @@ public class Arvore {
 
         if (modoAVL) {
             StringBuilder mensagem = new StringBuilder();
-            raiz = inserirAVL(raiz, valor, mensagem);
+            raiz = inserirAVL(raiz, valor, mensagem, true);
 
             if (mensagem.length() == 0) {
                 mensagem.append("Valor inserido: ").append(valor).append("\n");
@@ -68,15 +68,15 @@ public class Arvore {
         return no;
     }
 
-    private No inserirAVL(No no, int valor, StringBuilder mensagem) {
+    private No inserirAVL(No no, int valor, StringBuilder mensagem, boolean registrarHistorico) {
         if (no == null) {
             return new No(valor);
         }
 
         if (valor < no.getValor()) {
-            no.setEsquerda(inserirAVL(no.getEsquerda(), valor, mensagem));
+            no.setEsquerda(inserirAVL(no.getEsquerda(), valor, mensagem, registrarHistorico));
         } else if (valor > no.getValor()) {
-            no.setDireita(inserirAVL(no.getDireita(), valor, mensagem));
+            no.setDireita(inserirAVL(no.getDireita(), valor, mensagem, registrarHistorico));
         } else {
             return no;
         }
@@ -85,38 +85,46 @@ public class Arvore {
 
         if (balanco > 1 && valor < no.getEsquerda().getValor()) {
             String tipoRotacao = "Rotacao simples para a direita";
-            mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getEsquerda().getValor()));
-            registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getEsquerda().getValor());
+            if (registrarHistorico) {
+                mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getEsquerda().getValor()));
+                registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getEsquerda().getValor());
+            }
             return rotacaoDireita(no);
         }
 
         if (balanco < -1 && valor > no.getDireita().getValor()) {
             String tipoRotacao = "Rotacao simples para a esquerda";
-            mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getDireita().getValor()));
-            registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getDireita().getValor());
+            if (registrarHistorico) {
+                mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getDireita().getValor()));
+                registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getDireita().getValor());
+            }
             return rotacaoEsquerda(no);
         }
 
         if (balanco > 1 && valor > no.getEsquerda().getValor()) {
             String tipoRotacao = "Rotacao dupla a direita";
-            mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getEsquerda().getValor(), no.getEsquerda().getDireita().getValor()));
-            registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getEsquerda().getValor(), no.getEsquerda().getDireita().getValor());
+            if (registrarHistorico) {
+                mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getEsquerda().getValor(), no.getEsquerda().getDireita().getValor()));
+                registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getEsquerda().getValor(), no.getEsquerda().getDireita().getValor());
+            }
             no.setEsquerda(rotacaoEsquerda(no.getEsquerda()));
             return rotacaoDireita(no);
         }
 
         if (balanco < -1 && valor < no.getDireita().getValor()) {
             String tipoRotacao = "Rotacao dupla a esquerda";
-            mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getDireita().getValor(), no.getDireita().getEsquerda().getValor()));
-            registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
-                    no.getValor(), no.getDireita().getValor(), no.getDireita().getEsquerda().getValor());
+            if (registrarHistorico) {
+                mensagem.append(criarMensagemRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getDireita().getValor(), no.getDireita().getEsquerda().getValor()));
+                registrarRotacao(valor, no.getValor(), balanco, tipoRotacao,
+                        no.getValor(), no.getDireita().getValor(), no.getDireita().getEsquerda().getValor());
+            }
             no.setDireita(rotacaoDireita(no.getDireita()));
             return rotacaoEsquerda(no);
         }
@@ -233,6 +241,32 @@ public class Arvore {
 
     public void setModoAVL(boolean modoAVL) {
         this.modoAVL = modoAVL;
+    }
+
+    public void alterarModo(boolean novoModoAVL) {
+        if (modoAVL == novoModoAVL) {
+            registrarAcao("Modo atual: " + getModoTexto() + ".");
+            return;
+        }
+
+        List<Integer> valores = preOrdem();
+        raiz = null;
+        modoAVL = novoModoAVL;
+
+        for (int valor : valores) {
+            if (modoAVL) {
+                raiz = inserirAVL(raiz, valor, new StringBuilder(), false);
+            } else {
+                raiz = inserirRec(raiz, valor);
+            }
+        }
+
+        if (valores.isEmpty()) {
+            registrarAcao("Modo atual: " + getModoTexto() + ".");
+        } else {
+            registrarAcao("Modo alterado para " + getModoTexto() + ".");
+            registrarAcao("A arvore foi montada de novo com os valores atuais.");
+        }
     }
 
     public String getModoTexto() {

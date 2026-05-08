@@ -9,6 +9,7 @@ public class TelaArvore extends JFrame {
     private JComboBox<String> comboModo;
     private JTextArea areaLog;
     private PainelArvore painelArvore;
+    private boolean atualizandoModo;
 
     public TelaArvore() {
         arvore = new Arvore();
@@ -40,7 +41,6 @@ public class TelaArvore extends JFrame {
         JButton botaoImportar = new JButton("Importar TXT");
         JButton botaoInfo = new JButton("Info Arvore");
         JButton botaoInverter = new JButton("Inverter Arvore");
-        JButton botaoQuestoesAVL = new JButton("Questoes AVL");
 
         painelControle.add(labelValor);
         painelControle.add(campoNumero);
@@ -52,7 +52,6 @@ public class TelaArvore extends JFrame {
         painelControle.add(botaoImportar);
         painelControle.add(botaoInfo);
         painelControle.add(botaoInverter);
-        painelControle.add(botaoQuestoesAVL);
 
         add(painelControle, BorderLayout.NORTH);
 
@@ -62,7 +61,6 @@ public class TelaArvore extends JFrame {
         botaoImportar.addActionListener(e -> importarArvore());
         botaoInfo.addActionListener(e -> mostrarInfo());
         botaoInverter.addActionListener(e -> inverterArvore());
-        botaoQuestoesAVL.addActionListener(e -> mostrarQuestoesAVL());
         campoNumero.addActionListener(e -> inserirValor());
         comboModo.addActionListener(e -> trocarModo());
     }
@@ -88,18 +86,23 @@ public class TelaArvore extends JFrame {
     }
 
     private void trocarModo() {
-        arvore.setModoAVL("AVL".equals(comboModo.getSelectedItem()));
-        arvore.registrarAcao("Modo atual: " + arvore.getModoTexto() + ".");
+        if (atualizandoModo) {
+            return;
+        }
+
+        arvore.alterarModo("AVL".equals(comboModo.getSelectedItem()));
         atualizarAreaLog();
         atualizarVisualizacao();
     }
 
     private void atualizarComboModo() {
+        atualizandoModo = true;
         if (arvore.isModoAVL()) {
             comboModo.setSelectedItem("AVL");
         } else {
             comboModo.setSelectedItem("Binaria Normal");
         }
+        atualizandoModo = false;
     }
 
     private void inserirValor() {
@@ -229,30 +232,6 @@ public class TelaArvore extends JFrame {
         scroll.setPreferredSize(new Dimension(700, 450));
 
         JOptionPane.showMessageDialog(this, scroll, "Informacoes da Arvore", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private void mostrarQuestoesAVL() {
-        String texto = "1. O que e uma arvore AVL?\n"
-                + "Resposta: E uma arvore binaria de busca que mantem o balanceamento dos nos.\n\n"
-                + "2. Como e calculado o fator de balanco?\n"
-                + "Resposta: Altura da subarvore esquerda menos altura da subarvore direita.\n\n"
-                + "3. Quando uma rotacao e necessaria?\n"
-                + "Resposta: Quando o fator de balanco fica menor que -1 ou maior que 1.\n\n"
-                + "4. Quais sao os tipos de rotacao?\n"
-                + "Resposta: Simples a direita, simples a esquerda, dupla a direita e dupla a esquerda.\n\n"
-                + "5. O que significa balanco 0?\n"
-                + "Resposta: As duas subarvores tem a mesma altura.";
-
-        JTextArea textArea = new JTextArea(texto);
-        textArea.setEditable(false);
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
-        textArea.setFont(new Font("SansSerif", Font.PLAIN, 13));
-
-        JScrollPane scroll = new JScrollPane(textArea);
-        scroll.setPreferredSize(new Dimension(520, 300));
-
-        JOptionPane.showMessageDialog(this, scroll, "Questoes AVL", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void atualizarAreaLog() {
